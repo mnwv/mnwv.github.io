@@ -49,14 +49,18 @@
         // 設定値の入力（あなたの環境に合わせて書き換えてください）
         const GITHUB_USERNAME = "mnwv";
         const REPO_NAME = "SheetMusic"; // 非公開リポジトリ名
-        const FILE_PATH = "あ/ああうえのえき.ああ上野駅.pdf"; // リポジトリ内のPDFファイル名
+        const FOLDER_PATH = "あ"; // フォルダ名
+        const FILE_NAME = "あああうえのえき.ああ上野駅.pdf"; // ファイル名
+
         
         // ⚠️注意：このトークンは「Contents: Read-only」の最小権限（Fine-grained）で作成してください
         const REPO_TOKEN = "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"; 
 
         async function loadPrivatePDF() {
             // GitHub APIのURLを生成
-            const apiUrl = `https://github.com/${GITHUB_USERNAME}/${REPO_NAME}/contents/${FILE_PATH}`;
+            // 💡 ここを修正：GitHub APIの正しいURL形式にし、日本語をエンコードします
+            const encodedPath = encodeURIComponent(`${FOLDER_PATH}/${FILE_NAME}`);
+            const apiUrl = `https://github.com/${GITHUB_USERNAME}/${REPO_NAME}/contents/${encodedPath}`;
             
             try {
                 // 非公開リポジトリからPDFデータを取得
