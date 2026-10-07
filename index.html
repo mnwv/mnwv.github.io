@@ -1,15 +1,93 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
 	<meta charset="utf-8">
-	<!-- <meta http-equiv="pragma" content="no-cache">
-	<meta name="expires" content="0"> -->
 	<meta http-equiv="cache-control" content="no-cache, no-store">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link href="css/main.css" rel="stylesheet" type="text/css" media="all">
-  <title>FirstPage</title>
+    <title>楽譜閲覧</title>
+    <style>
+        body { margin: 0; padding: 20px; font-family: sans-serif; }
+        .pdf-container {
+            width: 100%;
+            height: 800px;
+            position: relative;
+            border: 1px solid #ccc;
+        }
+        /* 透明なカバーを上にかぶせて、ドラッグや右クリックをガード */
+        .pdf-cover {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0);
+            z-index: 10;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
 </head>
 <body>
-  <h3>mnwvのページ</h3>
+</head>
+<body oncontextmenu="return false;"> <!-- 右クリックを禁止 -->
+
+    <h1>【閲覧限定】資料ページ</h1>
+
+    <div class="pdf-container">
+        <div class="pdf-cover"></div>
+        <!-- ここにPDF.jsのビューアーが展開されます -->
+        <iframe id="pdfViewer" src=""></iframe>
+    </div>
+
+    <script>
+        // 設定値の入力（あなたの環境に合わせて書き換えてください）
+        const GITHUB_USERNAME = "mnwv";
+        const REPO_NAME = "SheetMusic"; // 非公開リポジトリ名
+        const FILE_PATH = "あ/ああうえのえき.ああ上野駅.pdf"; // リポジトリ内のPDFファイル名
+        
+        // ⚠️注意：このトークンは「Contents: Read-only」の最小権限（Fine-grained）で作成してください
+        const REPO_TOKEN = "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"; 
+
+        async function loadPrivatePDF() {
+            // GitHub APIのURLを生成
+            const apiUrl = `https://github.com{GITHUB_USERNAME}/${REPO_NAME}/contents/${FILE_PATH}`;
+            
+            try {
+                // 非公開リポジトリから認証をパスしてPDFデータを取得
+                const response = await fetch(apiUrl, {
+                    headers: {
+                        "Authorization": `Bearer ${REPO_TOKEN}`,
+                        "Accept": "application/vnd.github.raw" // RAWデータを要求
+                    }
+                });
+
+                if (!response.ok) throw new Error("PDFの取得に失敗しました。");
+
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+
+                // Mozilla公式のPDF.jsビューアーに、生成した一時的なBlob URLを渡す（ツールバー等も非表示）
+                const viewerUrl = `https://github.io{encodeURIComponent(blobUrl)}#toolbar=0&navpanes=0&pagemode=none`;
+                
+                document.getElementById("pdfViewer").src = viewerUrl;
+
+            } catch (error) {
+                console.error(error);
+                alert("ファイルの読み込み権限がないか、エラーが発生しました。");
+            }
+        }
+
+        // キーボードショートカット（Ctrl+S, Ctrl+Pなど）による保存・印刷を禁止
+        window.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'p' || e.key === 'a')) {
+                e.preventDefault();
+                alert('このページでの保存・印刷は禁止されています。');
+            }
+        });
+
+        // ページ読み込み時に実行
+        loadPrivatePDF();
+    </script>
 </body>
 </html>
