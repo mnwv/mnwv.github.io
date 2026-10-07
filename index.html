@@ -6,9 +6,6 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link href="css/main.css" rel="stylesheet" type="text/css" media="all">
     <title>楽譜閲覧</title>
-    <!-- PDF.js ライブラリの読み込み -->
-    <script src="https://cloudflare.com"></script>
-
     <style>
         body { margin: 0; padding: 20px; font-family: sans-serif; }
         .pdf-container {
@@ -57,6 +54,11 @@
         const REPO_TOKEN = "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"; 
 
         async function loadPrivatePDF() {
+            // 💡 pdfjsLibが正しく読み込まれるまで1秒だけ待機する安全策
+            if (typeof pdfjsLib === 'undefined') {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
             // GitHub APIのURLを生成
             // 💡 ここを修正：GitHub APIの正しいURL形式にし、日本語をエンコードします
             const encodedPath = encodeURIComponent(`${FOLDER_PATH}/${FILE_NAME}`);
@@ -114,8 +116,8 @@
             }
         });
 
-        // ページ読み込み時に実行
-        loadPrivatePDF();
+        // ページ読み込み完了時に実行
+        window.addEventListener('DOMContentLoaded', loadPrivatePDF);
     </script>
 </body>
 </html>
