@@ -6,6 +6,9 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link href="css/main.css" rel="stylesheet" type="text/css" media="all">
     <title>楽譜閲覧</title>
+    <!-- PDF.js ライブラリの読み込み -->
+    <script src="https://cloudflare.com"></script>
+
     <style>
         body { margin: 0; padding: 20px; font-family: sans-serif; }
         .pdf-container {
@@ -41,6 +44,8 @@
     </div>
 
     <script>
+        // PDF.jsのワーカーを設定
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cloudflare.com';
         // 設定値の入力（あなたの環境に合わせて書き換えてください）
         const GITHUB_USERNAME = "mnwv";
         const REPO_NAME = "SheetMusic"; // 非公開リポジトリ名
@@ -51,26 +56,45 @@
 
         async function loadPrivatePDF() {
             // GitHub APIのURLを生成
-            const apiUrl = `https://github.com/${GITHUB_USERNAME}/${REPO_NAME}/${FILE_PATH}`;
+            const apiUrl = `https://github.com/${GITHUB_USERNAME}/${REPO_NAME}/contents/${FILE_PATH}`;
             
             try {
-                // 非公開リポジトリから認証をパスしてPDFデータを取得
+                // 非公開リポジトリからPDFデータを取得
                 const response = await fetch(apiUrl, {
                     headers: {
                         "Authorization": `Bearer ${REPO_TOKEN}`,
-                        "Accept": "application/vnd.github.raw" // RAWデータを要求
+                        "Accept": "application/vnd.github.raw"
                     }
                 });
 
-                if (!response.ok) throw new Error("PDFの取得に失敗しました。");
+                if (!response.ok) {
+                    throw new Error(`GitHub APIエラー: ${response.status} - 設定やトークンを確認してください。`);
+                }
 
                 const blob = await response.blob();
-                const blobUrl = URL.createObjectURL(blob);
+                const arrayBuffer = await blob.arrayBuffer();
 
-                // Mozilla公式のPDF.jsビューアーに、生成した一時的なBlob URLを渡す（ツールバー等も非表示）
-                const viewerUrl = `https://github.io{encodeURIComponent(blobUrl)}#toolbar=0&navpanes=0&pagemode=none`;
+                // PDFの読み込みとレンダリング処理
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                const container = document.getElementById('pdf-pages-container');
                 
-                document.getElementById("pdfViewer").src = viewerUrl;
+                // 全ページをループして描画
+                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                    const page = await pdf.getPage(pageNum);
+                    const viewport = page.getViewport({ scale: 1.5 }); // 拡大率（画質）
+
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    container.appendChild(canvas);
+
+                    await page.render({
+                        canvasContext: context,
+                        viewport: viewport
+                    }).promise;
+                }
 
             } catch (error) {
                 console.error(error);
